@@ -2,11 +2,15 @@ import NextAuth from 'next-auth'
 
 import authConfig from './auth.config'
 import {
+  adminRoutesPrefix,
   apiAuthPrefix,
+  apiPrefix,
   authRoutes,
   DEFAULT_LOGIN_REDIRECT,
+  INSUFFICIENT_PERMISSIONS,
   publicRoutes
 } from './routes'
+import { UserRole } from '@prisma/client'
 
 const { auth } = NextAuth(authConfig)
 
@@ -17,9 +21,22 @@ export default auth(req => {
   const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix)
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname)
   const isAuthRoute = authRoutes.includes(nextUrl.pathname)
+  const isAdminRoute = nextUrl.pathname.startsWith(adminRoutesPrefix)
+  const isApiRoute = nextUrl.pathname.startsWith(apiPrefix)
 
   if (isApiAuthRoute) {
     return
+  }
+
+  if (isApiRoute) {
+    return
+  }
+
+  if (isAdminRoute && isLoggedIn) {
+    if (UserRole.ADMIN) {
+      return
+    }
+    return Response.redirect(new URL(INSUFFICIENT_PERMISSIONS, nextUrl))
   }
 
   if (isAuthRoute) {

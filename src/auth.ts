@@ -15,7 +15,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async linkAccount({ user }) {
       await db.user.update({
         where: { id: user.id },
-        data: { emailVerified: new Date() }
+        data: {
+          emailVerified: new Date()
+        }
+      })
+    },
+    async signIn({ user }) {
+      await db.user.update({
+        where: {
+          id: user.id
+        },
+        data: {
+          username: user.name?.trim().replace(/\s/g, '')
+        }
       })
     }
   },
@@ -40,8 +52,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = token.role as UserRole
       }
 
+      if (token.username && session.user) {
+        session.user.username = token.username as string
+      }
+
       if (session.user) {
         session.user.name = token.name
+        session.user.username = token.username as string
         session.user.role = token.role as UserRole
       }
 
@@ -55,6 +72,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!existingUser) return token
 
       token.name = existingUser.name
+      token.username = existingUser.username
       token.role = existingUser.role
       return token
     }

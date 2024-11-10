@@ -5,14 +5,14 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
   provider  = "postgresql"
-  url  	    = env("DATABASE_URL")
-  // uncomment next line if you use Prisma <5.10
-  // directUrl = env("DATABASE_URL_UNPOOLED")
+  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
 }
 
 enum UserRole {
@@ -21,14 +21,26 @@ enum UserRole {
 }
 
 model User {
-  id            String          @id @default(cuid())
-  name          String?
-  email         String          @unique
+  id            String     @id @default(cuid())
+  name          String
+  username      String?    @unique
+  displayName   String?
+  email         String     @unique
   emailVerified DateTime?
   image         String?
-  password      String?
-  role          UserRole @default(USER)
+  bio           String?
+  role          UserRole   @default(USER)
   accounts      Account[]
+  posts         Post[]
+  following     Follow[]   @relation("Following") // users that this user is following
+  followers     Follow[]   @relation("Followers") // users that are following this user
+  likes         Like[]
+  bookmarks     Bookmark[]
+  comments      Comment[]
+
+  createdAt DateTime @default(now())
+
+  @@map("users")
 }
 
 model Account {
@@ -43,9 +55,86 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
- 
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
+
   @@id([provider, providerAccountId])
 }
 
+model Follow {
+  followerId  String
+  follower    User   @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User   @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId]) // prevent duplicate follow records
+  @@map("follows")
+}
+
+model Post {
+  id          String     @id @default(cuid())
+  content     String
+  authorId    String
+  user        User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  attachments Media[]
+  likes       Like[]
+  bookmarks   Bookmark[]
+  comments    Comment[]
+
+  createdAt DateTime @default(now())
+
+  @@map("posts")
+}
+
+model Media {
+  id     String    @id @default(cuid())
+  postId String?
+  post   Post?     @relation(fields: [postId], references: [id], onDelete: SetNull)
+  type   MediaType
+  url    String
+
+  createdAt DateTime @default(now())
+
+  @@map("post_media")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model Comment {
+  id       String @id @default(cuid())
+  content  String
+  authorId String
+  user     User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId   String
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("comments")
+}
+
+model Like {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@map("likes")
+}
+
+model Bookmark {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@map("bookmarks")
+}

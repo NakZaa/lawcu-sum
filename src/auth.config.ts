@@ -8,7 +8,7 @@ export default {
         params: {
           access_type: 'offline',
           prompt: 'consent',
-          response_type: 'code'
+          response_type: 'code',
         }
       },
       clientId: process.env.GOOGLE_CLIENT_ID,
