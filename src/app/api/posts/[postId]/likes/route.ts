@@ -57,19 +57,42 @@ export async function POST(
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    await db.like.upsert({
-      where: {
-        userId_postId: {
+    const post = await db.post.findUnique({
+      where: { id: postId },
+      select: { authorId: true }
+    })
+
+    if (!post) {
+      return Response.json({ error: 'Post not found' }, { status: 404 })
+    }
+
+    await db.$transaction([
+      db.like.upsert({
+        where: {
+          userId_postId: {
+            userId: loggedInUser.id,
+            postId
+          }
+        },
+        create: {
           userId: loggedInUser.id,
           postId
-        }
-      },
-      create: {
-        userId: loggedInUser.id,
-        postId
-      },
-      update: {}
-    })
+        },
+        update: {}
+      }),
+      ...(loggedInUser.id !== post.authorId
+        ? [
+            db.notification.create({
+              data: {
+                issuerId: loggedInUser.id,
+                recipientId: post.authorId,
+                postId,
+                type: 'LIKE'
+              }
+            })
+          ]
+        : [])
+    ])
 
     return new Response()
   } catch (error) {
@@ -88,12 +111,31 @@ export async function DELETE(
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    await db.like.deleteMany({
-      where: {
-        userId: loggedInUser.id,
-        postId
-      }
+    const post = await db.post.findUnique({
+      where: { id: postId },
+      select: { authorId: true }
     })
+
+    if (!post) {
+      return Response.json({ error: 'Post not found' }, { status: 404 })
+    }
+
+    await db.$transaction([
+      db.like.deleteMany({
+        where: {
+          userId: loggedInUser.id,
+          postId
+        }
+      }),
+      db.notification.deleteMany({
+        where: {
+          issuerId: loggedInUser.id,
+          recipientId: post.authorId,
+          postId,
+          type: 'LIKE'
+        }
+      })
+    ])
 
     return new Response()
   } catch (error) {
