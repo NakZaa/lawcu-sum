@@ -9,6 +9,14 @@ const nextConfig = {
       },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' }
     ]
+  },
+  rewrites: () => {
+    return [
+      {
+        source: '/hashtag/:tag',
+        destination: '/search?q=%23:tag'
+      }
+    ]
   }
 }
 

@@ -3,7 +3,6 @@
 import { NotificationCountInfo } from '@/types/types'
 import { Button } from './ui/button'
 import Link from 'next/link'
-import { Bell } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import kyInstance from '@/lib/ky'
 import { BellIcon } from '@heroicons/react/24/outline'
