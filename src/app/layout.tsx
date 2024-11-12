@@ -9,6 +9,7 @@ import { NextSSRPlugin } from '@uploadthing/react/next-ssr-plugin'
 import { extractRouterConfig } from 'uploadthing/server'
 import { fileRouter } from './api/uploadthing/core'
 import { Analytics } from '@vercel/analytics/react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const IBM = IBM_Plex_Sans_Thai({ subsets: ['latin', 'thai'], weight: '400' })
 
@@ -31,6 +32,7 @@ export default async function RootLayout({
           <ReactQueryProvider>
             {children}
             <Analytics />
+            <SpeedInsights />
           </ReactQueryProvider>
           <Toaster />
         </body>
