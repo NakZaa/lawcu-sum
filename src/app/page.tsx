@@ -11,7 +11,7 @@ export default function Home() {
         </h1>
         <div>
           <LoginButton asChild>
-            <Button size="lg">Login with Google</Button>
+            <Button size="lg">Login with Chula Account</Button>
           </LoginButton>
         </div>
       </div>
